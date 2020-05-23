@@ -8,65 +8,104 @@ from nltk.tokenize import word_tokenize
 from flask import Flask
 from flask import render_template, request, jsonify
 from plotly.graph_objs import Bar
-from sklearn.externals import joblib
+import joblib
 from sqlalchemy import create_engine
-
+from sklearn.ensemble import RandomForestClassifier
+import pandas as pd
+import numpy as np
 
 app = Flask(__name__)
 
 def tokenize(text):
+    # Separate the sentences in words
     tokens = word_tokenize(text)
+    
+    # Initialize lemmatizer
     lemmatizer = WordNetLemmatizer()
-
+    
+    # Lowercase, eliminate blank spaces and findin the root form of the words
     clean_tokens = []
     for tok in tokens:
-        clean_tok = lemmatizer.lemmatize(tok).lower().strip()
+        clean_tok = lemmatizer.lemmatize(tok, pos='v').lower().strip()
         clean_tokens.append(clean_tok)
-
+        
     return clean_tokens
-
+    
 # load data
-engine = create_engine('sqlite:///../data/YourDatabaseName.db')
-df = pd.read_sql_table('YourTableName', engine)
+engine = create_engine('sqlite:///../data/DisasterResponse.db')
+df = pd.read_sql_table('messages_categories', engine)
 
 # load model
-model = joblib.load("../models/your_model_name.pkl")
+model = joblib.load("../models/classifier_model.pkl")
 
+# Function for first plot
+def first_plot(df):
+    """Create first plot TOP 10 categories """
+    
+    # Define counts
+    categories = df.drop(['id', 'message', 'original', 'genre'], axis = 1).sum().sort_values(ascending=False)
 
+    # Get top 10
+    categories = categories[0:10]
+    
+    # Json for plotting
+    data = [Bar(
+        x = categories.index,
+        y = categories.values,
+    )]
+    
+    layout = {
+        "title": "Messages per category",
+        "xaxis": {
+               "title": 'Categories'
+        },
+        "yaxis": {
+               "title": 'No. of messages'
+        }
+    }
+    
+    return {"data": data, "layout": layout}
+    
+# Function for second plot
+def second_plot(df):
+    """Create second plot with message genres """
+    
+    # Define counts
+    genres = df.groupby('genre').count()['message']
+    
+    # Json for plotting
+    data = [Bar(
+        x = genres.index,
+        y = genres.values,
+    )]
+    
+    layout = {
+        "title": "Messages per genre",
+        "xaxis": {
+               "title": 'Genres'
+        },
+        "yaxis": {
+               "title": 'No. of messages'
+        }
+    }
+    
+    return {"data": data, "layout": layout}
+    
+    
+# call function
+fig1 = first_plot(df)
+fig2 = second_plot(df)
+
+    
 # index webpage displays cool visuals and receives user input text for model
 @app.route('/')
 @app.route('/index')
 def index():
-    
-    # extract data needed for visuals
-    # TODO: Below is an example - modify to extract data for your own visuals
-    genre_counts = df.groupby('genre').count()['message']
-    genre_names = list(genre_counts.index)
-    
-    # create visuals
-    # TODO: Below is an example - modify to create your own visuals
-    graphs = [
-        {
-            'data': [
-                Bar(
-                    x=genre_names,
-                    y=genre_counts
-                )
-            ],
-
-            'layout': {
-                'title': 'Distribution of Message Genres',
-                'yaxis': {
-                    'title': "Count"
-                },
-                'xaxis': {
-                    'title': "Genre"
-                }
-            }
-        }
-    ]
-    
+ 
+    graphs = [ fig1, fig2 ]
+ 
     # encode plotly graphs in JSON
+    graphs = [fig1, fig2]
     ids = ["graph-{}".format(i) for i, _ in enumerate(graphs)]
     graphJSON = json.dumps(graphs, cls=plotly.utils.PlotlyJSONEncoder)
     

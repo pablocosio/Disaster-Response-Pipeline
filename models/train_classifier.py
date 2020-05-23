@@ -1,3 +1,7 @@
+import nltk
+nltk.download('wordnet')
+nltk.download('stopwords')
+
 import sys
 import pandas as pd
 import numpy as np
@@ -5,6 +9,7 @@ import numpy as np
 from sqlalchemy import create_engine
 from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
+from nltk.corpus import stopwords
 
 from sklearn.pipeline import Pipeline
 from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
@@ -29,11 +34,14 @@ def load_data(database_filepath):
     engine = create_engine('sqlite:///' + database_filepath)
     df = pd.read_sql_table('messages_categories', engine) 
 
+    # Define category names
+    category_names = list(df.drop(['id', 'message', 'original', 'genre'], axis = 1).columns)
+    
     # Define features and target variables
     X = df.message.values
     y = df.drop(['id', 'message', 'original', 'genre'], axis = 1).values
 
-    return X, y
+    return X, y, category_names
     
 
 def tokenize(text):
@@ -82,8 +90,8 @@ def build_model():
     
     # Define parameters
     parameters = {
-        'clf__estimator__n_estimators': [50, 100, 200],
-        'clf__estimator__min_samples_leaf': [1, 5, 10],
+        'clf__estimator__n_estimators': [50, 100]#, 200],
+        #'clf__estimator__min_samples_leaf': [1, 5, 10],
         #'clf__estimator__max_depth': [10, 20, 50, 100, 200],
         #'tfidf__smooth_idf': (True, False),
         #'tfidf__use_idf': (True, False)
