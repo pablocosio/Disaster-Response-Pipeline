@@ -6,6 +6,17 @@ import sys
 
 
 def load_data(messages_filepath, categories_filepath):
+    '''
+    Loads data and merge the dataframes    
+    
+    Args:
+    messages_filepath: path of the messages csv file
+    categories_filepath: path of the categories csv file
+    
+    Return:
+    df: resulting dataframe from the merge of the categories and messages datasets
+    '''
+    
     try:
         # load messages dataset
         messages = pd.read_csv(messages_filepath)
@@ -22,6 +33,17 @@ def load_data(messages_filepath, categories_filepath):
 
 
 def clean_data(df):
+    '''
+    Cleans data for applying the ML algorithm: separate categories in columns, convert 
+    variables to binary and drop duplicates.
+    
+    Args:
+    df: uncleaned dataframe
+       
+    Return:
+    df: cleaned dataframe
+    '''
+    
     try:
         # create a dataframe of the 36 individual category columns
         categories = df.categories.str.split(";", expand = True)
@@ -39,6 +61,9 @@ def clean_data(df):
             # convert column from string to numeric
             categories[column] = pd.to_numeric(categories[column])
 
+        # Convert the first column to binary
+        categories.related = categories.related.apply(lambda row: 1 if row == 2 else row)
+        
         # drop the original categories column from `df`
         df.drop('categories', axis=1, inplace=True)
 
@@ -55,11 +80,23 @@ def clean_data(df):
 
 
 def save_data(df, database_filename):
+    '''
+    Saves the data into a SQL database.
+    
+    Args:
+    df: cleaned dataframe
+    database_filename: path of the databse where the data is saved
+    '''
+    
     engine = create_engine('sqlite:///'+database_filename)
     df.to_sql('messages_categories', engine, index=False)  
 
 
 def main():
+    '''
+    Reads user input, prepares the data cleaning it and saves it on a database
+    '''
+    
     if len(sys.argv) == 4:
 
         messages_filepath, categories_filepath, database_filepath = sys.argv[1:]

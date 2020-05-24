@@ -85,13 +85,13 @@ def build_model():
     pipeline = Pipeline([
         ('vect', CountVectorizer(tokenizer=tokenize)),
         ('tfidf', TfidfTransformer()),
-        ('clf', MultiOutputClassifier(RandomForestClassifier()))
+        ('clf', MultiOutputClassifier(RandomForestClassifier(verbose = 2)))
     ])
     
     # Define parameters
     parameters = {
-        'clf__estimator__n_estimators': [50, 100]#, 200],
-        #'clf__estimator__min_samples_leaf': [1, 5, 10],
+        'clf__estimator__n_estimators': [50, 100, 150],
+        'clf__estimator__min_samples_leaf': [1, 5, 10],
         #'clf__estimator__max_depth': [10, 20, 50, 100, 200],
         #'tfidf__smooth_idf': (True, False),
         #'tfidf__use_idf': (True, False)
@@ -118,22 +118,8 @@ def evaluate_model(model, X_test, Y_test, category_names):
     y_pred = model.predict(X_test)
 
     # Evaluate results with the classification report
-    for col in np.arange(Y_test.shape[1]):
-        print("Column name: {}".format(category_names[col]))
-        print(classification_report(Y_test[:,col], y_pred[:,col], labels = labels))
-        print("-----------------------------------------------------------------")
-    
-    # Estimate accuracy
-    print('Accuracy: {}'.format(np.mean(Y_test == y_pred)))
-    print("-----------------------------------------------------------------")
-    
-    # Estimate f1-score
-    for col in np.arange(len(col_names)):
-        score = f1_score(y_test[:,col], y_pred[:,col], average='weighted')
-        scores.append(score)
+    print(classification_report(y_test, y_pred, target_names=category_names))
 
-    print("TOTAL F1-SCORE: {}".format(np.mean(scores)))
-    print("-----------------------------------------------------------------")
     
     
 def save_model(model, model_filepath):

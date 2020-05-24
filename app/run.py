@@ -17,6 +17,8 @@ import numpy as np
 app = Flask(__name__)
 
 def tokenize(text):
+    """ Tokenizes text data"""
+    
     # Separate the sentences in words
     tokens = word_tokenize(text)
     
@@ -32,9 +34,12 @@ def tokenize(text):
     return clean_tokens
     
 # load data
-engine = create_engine('sqlite:///../data/DisasterResponse.db')
-df = pd.read_sql_table('messages_categories', engine)
-
+try:
+    engine = create_engine('sqlite:///../data/DisasterResponse.db')
+    df = pd.read_sql_table('messages_categories', con = engine)
+except:
+    print('If load data from database failed, try to run it from the app folder')
+    
 # load model
 model = joblib.load("../models/classifier_model.pkl")
 
@@ -91,21 +96,53 @@ def second_plot(df):
     
     return {"data": data, "layout": layout}
     
+# Function for second plot
+def third_plot(df):
+    """Create third plot with 0/1 per category """
+    
+    # Define top-10 categories by amount of messages
+    categories = df.drop(['id', 'message', 'original', 'genre'], axis = 1).sum().sort_values(ascending=False)
+    categories = list(categories[0:10].index)
+    
+    # Define loop
+    graphs = []
+    for cat in categories:
+        counts = df[cat].value_counts()
+        # Json for plotting
+        data = [Bar(
+            x = counts.index,
+            y = counts.values,
+        )]
+    
+        layout = {
+            "title": "Classification messages of category {}".format(cat),
+            "xaxis": {
+                   "title": 'Assigned to the category or not',
+                   "tickmode": "array",
+                   "tickvals": [0,1],
+                   "ticktext":["no", "yes"]
+            },
+            "yaxis": {
+                   "title": 'No. of messages'
+            }
+        }
+        
+        graphs.append({"data": data, "layout": layout})
+    
+    return graphs
     
 # call function
 fig1 = first_plot(df)
 fig2 = second_plot(df)
-
+figs = third_plot(df)
     
 # index webpage displays cool visuals and receives user input text for model
 @app.route('/')
 @app.route('/index')
 def index():
  
-    graphs = [ fig1, fig2 ]
- 
     # encode plotly graphs in JSON
-    graphs = [fig1, fig2]
+    graphs = [ fig1, fig2 ] + figs
     ids = ["graph-{}".format(i) for i, _ in enumerate(graphs)]
     graphJSON = json.dumps(graphs, cls=plotly.utils.PlotlyJSONEncoder)
     
