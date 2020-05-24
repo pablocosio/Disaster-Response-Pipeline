@@ -91,7 +91,7 @@ def build_model():
     # Define parameters
     parameters = {
         'clf__estimator__n_estimators': [50, 100, 150],
-        'clf__estimator__min_samples_leaf': [1, 5, 10],
+        'clf__estimator__min_samples_leaf': [1, 5, 10]
         #'clf__estimator__max_depth': [10, 20, 50, 100, 200],
         #'tfidf__smooth_idf': (True, False),
         #'tfidf__use_idf': (True, False)
@@ -115,10 +115,10 @@ def evaluate_model(model, X_test, Y_test, category_names):
     '''
     
     # Use the model to predict
-    y_pred = model.predict(X_test)
+    Y_pred = model.predict(X_test)
 
     # Evaluate results with the classification report
-    print(classification_report(y_test, y_pred, target_names=category_names))
+    print(classification_report(Y_test, Y_pred, target_names=category_names))
 
     
     
